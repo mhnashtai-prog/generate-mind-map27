@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Enhanced Synonym Mind Map Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 20px auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      padding: 32px 22px 42px 22px;
+      min-height: calc(100vh - 40px);
+      box-sizing: border-box;
+    }
+    h1 {
+      text-align: center;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 18px;
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .inputRow {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    #wordInput {
+      padding: 14px 18px;
+      font-size: 1.1rem;
+      min-width: 200px;
+      border-radius: 12px;
+      border: 2px solid #e1e8f0;
+      outline: none;
+      background: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    #wordInput:focus {
+      border-color: #667eea;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+      transform: translateY(-1px);
+    }
+    #generateBtn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-weight: 600;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    #generateBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+    }
+    #generateBtn:active {
+      transform: translateY(0);
+    }
+    #generateBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #mindMapArea {
+      position: relative;
+      width: 100%;
+      min-height: 600px;
+      margin: 0 auto;
+      margin-top: 15px;
+      border-radius: 16px;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%);
+      overflow: hidden;
+    }
+    .center-word {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+      color: white;
+      font-weight: bold;
+      border-radius: 50px;
+      box-shadow: 0 8px 30px rgba(255, 216, 155, 0.4);
+      font-size: 1.4rem;
+      padding: 20px 36px;
+      transform: translate(-50%,-50%);
+      text-align: center;
+      z-index: 10;
+      animation: pulse 2s ease-in-out infinite;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    @keyframes pulse {
+      0%, 100% { transform: translate(-50%,-50%) scale(1); }
+      50% { transform: translate(-50%,-50%) scale(1.05); }
+    }
+    .synonym-node {
+      position: absolute;
+      width: 260px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      padding: 18px;
+      text-align: center;
+      z-index: 5;
+      transition: all 0.3s ease;
+      animation: fadeInScale 0.6s ease-out backwards;
+    }
+    .synonym-node:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    }
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .synonym-label {
+      display: inline-block;
+      font-weight: 700;
+      border-radius: 12px;
+      padding: 8px 16px;
+      margin-bottom: 12px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      transition: all 0.2s ease;
+    }
+    .synonym-label:hover {
+      transform: scale(1.05);
+    }
+    .example {
+      font-size: 0.95rem;
+      margin-top: 8px;
+      color: #4a5568;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.7);
+      min-height: 40px;
+      line-height: 1.4em;
+      text-align: left;
+      border-left: 3px solid;
+      font-style: italic;
+    }
+    svg {
+      position: absolute;
+      top: 0; 
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .connection-line {
+      stroke-width: 2;
+      stroke-linecap: round;
+      opacity: 0.6;
+      animation: drawLine 0.8s ease-out forwards;
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+    }
+    @keyframes drawLine {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+    .stats {
+      text-align: center;
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .error-message {
+      text-align: center;
+      margin-top: 160px;
+      color: #e53e3e;
+      font-size: 1.1rem;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      border: 2px solid #fed7d7;
+    }
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+        padding: 20px 16px;
+        min-height: calc(100vh - 20px);
+      }
+      h1 { font-size: 2rem; }
+      #mindMapArea { min-height: 500px; }
+      .synonym-node { 
+        width: 240px; 
+        font-size: 0.9em;
+      }
+      .center-word { 
+        font-size: 1.2rem; 
+        padding: 16px 28px; 
+      }
+    }
+    @media (max-width: 480px) {
+      .inputRow { flex-direction: column; gap: 12px; }
+      #wordInput { min-width: 280px; }
+      #mindMapArea { min-height: 450px; }
+      .synonym-node { width: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>✨ Synonym Mind Map Generator</h1>
+    <div class="inputRow">
+      <input type="text" id="wordInput" placeholder="Enter a word to explore..." maxlength="32" />
+      <button id="generateBtn">Generate Map</button>
+    </div>
+    <div id="mindMapArea"></div>
+  </div>
+  <script>
+    const colorPalette = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+      'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+      'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+      'linear-gradient(135deg, #ff8a80 0%, #ea6100 100%)',
+      'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+      'linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%)',
+      'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)'
+    ];
+
+    const borderColors = [
+      '#667eea', '#f5576c', '#00f2fe', '#38f9d7', 
+      '#fee140', '#fed6e3', '#fecfef', '#fcb69f',
+      '#ea6100', '#8fd3f4', '#3f2b96', '#a6c1ee'
+    ];
+
+    function getRealWorldExample(mainWord, synonym) {
+      const examples = {
+        // Magnify examples
+        'enlarge': `"Can you enlarge this photo so I can see the details better?"`,
+        'amplify': `"The microphone will amplify your voice so everyone can hear."`,
+        'expand': `"We need to expand our search to find more candidates."`,
+        'increase': `"Let's increase the font size to make it more readable."`,
+        'enhance': `"This filter will enhance the colors in your selfie."`,
+        'boost': `"A good night's sleep will boost your energy levels."`,
+        'intensify': `"The storm clouds intensify as they move inland."`,
+        'exaggerate': `"Don't exaggerate your accomplishments on your resume."`,
+        'overdraw': `"He tends to overdraw his stories to make them more exciting."`,
+        'overstate': `"It would be wrong to overstate the risks involved."`,
+        'hyperbolize': `"She tends to hyperbolize every minor inconvenience."`,
+        'blow up': `"Can you blow up this section of the map?"`,
+        
+        // Happy examples  
+        'joyful': `"She felt joyful watching her daughter graduate from college."`,
+        'cheerful': `"His cheerful attitude brightens everyone's day at the office."`,
+        'delighted': `"I'm delighted that you could make it to the party!"`,
+        'elated': `"The team was elated after winning the championship game."`,
+        'content': `"After retiring, he felt content spending time in his garden."`,
+        'pleased': `"The manager was pleased with the quarterly sales results."`,
+        'excited': `"The kids are excited about going to Disney World tomorrow."`,
+        'upbeat': `"Despite the setback, she remained upbeat about the project."`,
+        'glad': `"I'm glad you called - I was just thinking about you."`,
+        
+        // Big examples
+        'large': `"We ordered a large pizza for the whole family to share."`,
+        'huge': `"There's a huge crowd gathered for the concert tonight."`,
+        'massive': `"The massive oak tree has stood in our yard for decades."`,
+        'enormous': `"An enormous wave crashed over the seawall during the storm."`,
+        'gigantic': `"The kids were amazed by the gigantic dinosaur skeleton."`,
+        'vast': `"The vast desert stretched endlessly in all directions."`,
+        'immense': `"She felt immense pride watching her son receive his medal."`,
+        'colossal': `"Building the bridge was a colossal engineering achievement."`,
+        'substantial': `"They made a substantial donation to the local hospital."`,
+        
+        // Good examples
+        'excellent': `"The restaurant received excellent reviews from food critics."`,
+        'outstanding': `"Her outstanding performance earned her a promotion."`,
+        'superior': `"This brand offers superior quality at a reasonable price."`,
+        'wonderful': `"We had a wonderful time at the beach last weekend."`,
+        'great': `"That's a great idea - let's try it tomorrow!"`,
+        'fantastic': `"The fireworks display was absolutely fantastic."`,
+        'amazing': `"It's amazing how quickly technology changes these days."`,
+        'superb': `"The chef prepared a superb meal for our anniversary."`,
+        'terrific': `"You did a terrific job on that presentation."`,
+        
+        // Smart examples
+        'intelligent': `"She's intelligent enough to solve complex problems quickly."`,
+        'clever': `"That's a clever solution to a difficult puzzle."`,
+        'bright': `"The bright student always asks thoughtful questions."`,
+        'brilliant': `"His brilliant idea saved the company thousands of dollars."`,
+        'wise': `"It was wise of you to save money for emergencies."`,
+        'sharp': `"She has a sharp mind for business strategy."`,
+        'astute': `"His astute observations helped solve the mystery."`,
+        'shrewd': `"The shrewd investor bought stocks when prices were low."`,
+        'quick-witted': `"Her quick-witted response got everyone laughing."`,
+        
+        // Fast examples
+        'quick': `"Let me take a quick look at your homework before dinner."`,
+        'rapid': `"The rapid growth of the city surprised urban planners."`,
+        'swift': `"The swift response from paramedics saved her life."`,
+        'speedy': `"We need a speedy solution to this urgent problem."`,
+        'hasty': `"Don't make a hasty decision - think it through first."`,
+        'brisk': `"We took a brisk walk around the neighborhood this morning."`,
+        'immediate': `"The medication provided immediate relief from pain."`,
+        'instant': `"Instant coffee is convenient but doesn't taste as good."`,
+        'prompt': `"Thank you for your prompt reply to my email."`,
+        
+        // Beautiful examples
+        'gorgeous': `"The bride looked gorgeous in her wedding dress."`,
+        'stunning': `"The sunset over the mountains was absolutely stunning."`,
+        'lovely': `"What a lovely garden you have in your backyard!"`,
+        'attractive': `"The attractive design caught everyone's attention."`,
+        'elegant': `"She wore an elegant black dress to the gala."`,
+        'graceful': `"The dancer's graceful movements captivated the audience."`,
+        'magnificent': `"The cathedral's magnificent architecture took our breath away."`,
+        'splendid': `"We had splendid weather for the outdoor wedding."`,
+        'exquisite': `"The chef created an exquisite five-course meal."`
+      };
+
+      const key = synonym.toLowerCase();
+      if (examples[key]) {
+        return examples[key];
+      }
+      
+      // Generate contextual sentence for unknown synonyms
+      return `"The ${synonym} approach worked better than expected in this situation."`;
+    }
+
+    let isGenerating = false;
+
+    document.getElementById('generateBtn').addEventListener('click', generateMindMap);
+    document.getElementById('wordInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') generateMindMap();
+    });
+
+    async function generateMindMap() {
+      if (isGenerating) return;
+      
+      const word = document.getElementById('wordInput').value.trim();
+      if (!word) {
+        alert('Please enter a word.');
+        return;
+      }
+
+      isGenerating = true;
+      const btn = document.getElementById('generateBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading"></span>Generating...';
+      btn.disabled = true;
+
+      document.getElementById('mindMapArea').innerHTML = `
+        <div style="text-align:center; margin-top:200px; color:#666; font-size:1.1rem;">
+          <div class="loading" style="margin:0 auto 16px;"></div>
+          Fetching synonyms for "${word}"...
+        </div>
+      `;
+
+      try {
+        let synonyms = await fetchSynonyms(word);
+        
+        // Remove duplicates and filter
+        synonyms = synonyms.filter((w, i, a) => 
+          i === a.findIndex(({word: b}) => b.toLowerCase() === w.word.toLowerCase()) &&
+          w.word.toLowerCase() !== word.toLowerCase()
+        );
+
+        if (synonyms.length === 0) {
+          document.getElementById('mindMapArea').innerHTML = `
+            <div class="error-message">
+              <strong>No synonyms found for "${word}"</strong><br>
+              Try a different word or check your spelling.
+            </div>
+          `;
+        } else {
+          synonyms = synonyms.slice(0, 12);
+          drawMindMap(word, synonyms.map(s => s.word));
+        }
+      } catch (error) {
+        document.getElementById('mindMapArea').innerHTML = `
+          <div class="error-message">
+            <strong>Error loading synonyms</strong><br>
+            Please check your internet connection and try again.
+          </div>
+        `;
+      } finally {
+        isGenerating = false;
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    async function fetchSynonyms(word) {
+      try {
+        const response = await fetch('https://api.datamuse.com/words?rel_syn=' + encodeURIComponent(word));
+        if (!response.ok) throw new Error('API request failed');
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching synonyms:', error);
+        // Fallback sample data for demonstration
+        return getSampleSynonyms(word);
+      }
+    }
+
+    function getSampleSynonyms(word) {
+      const sampleData = {
+        'happy': [
+          {word: 'joyful'}, {word: 'cheerful'}, {word: 'delighted'}, 
+          {word: 'elated'}, {word: 'content'}, {word: 'pleased'},
+          {word: 'excited'}, {word: 'upbeat'}, {word: 'glad'}
+        ],
+        'big': [
+          {word: 'large'}, {word: 'huge'}, {word: 'massive'}, 
+          {word: 'enormous'}, {word: 'gigantic'}, {word: 'vast'},
+          {word: 'immense'}, {word: 'colossal'}, {word: 'substantial'}
+        ],
+        'good': [
+          {word: 'excellent'}, {word: 'outstanding'}, {word: 'superior'}, 
+          {word: 'wonderful'}, {word: 'great'}, {word: 'fantastic'},
+          {word: 'amazing'}, {word: 'superb'}, {word: 'terrific'}
+        ],
+        'fast': [
+          {word: 'quick'}, {word: 'rapid'}, {word: 'swift'}, 
+          {word: 'speedy'}, {word: 'hasty'}, {word: 'brisk'},
+          {word: 'immediate'}, {word: 'instant'}, {word: 'prompt'}
+        ],
+        'smart': [
+          {word: 'intelligent'}, {word: 'clever'}, {word: 'bright'}, 
+          {word: 'brilliant'}, {word: 'wise'}, {word: 'sharp'},
+          {word: 'astute'}, {word: 'shrewd'}, {word: 'quick-witted'}
+        ],
+        'beautiful': [
+          {word: 'gorgeous'}, {word: 'stunning'}, {word: 'lovely'}, 
+          {word: 'attractive'}, {word: 'elegant'}, {word: 'graceful'},
+          {word: 'magnificent'}, {word: 'splendid'}, {word: 'exquisite'}
+        ]
+      };
+      
+      const key = word.toLowerCase();
+      if (sampleData[key]) {
+        return sampleData[key];
+      }
+      
+      // Generic fallback
+      return [
+        {word: 'similar'}, {word: 'equivalent'}, {word: 'comparable'}, 
+        {word: 'alike'}, {word: 'related'}, {word: 'corresponding'}
+      ];
+    }
+
+    function drawMindMap(mainWord, synonyms) {
+      const area = document.getElementById('mindMapArea');
+      area.innerHTML = '';
+      
+      const rect = area.getBoundingClientRect();
+      const w = Math.max(1000, rect.width);
+      const h = Math.max(700, rect.height);
+      
+      area.style.height = h + 'px';
+
+      // Central word
+      const center = document.createElement('div');
+      center.className = 'center-word';
+      center.innerText = mainWord.charAt(0).toUpperCase() + mainWord.slice(1);
+      area.appendChild(center);
+
+      // Calculate positions with much better spacing - larger radius and adaptive sizing
+      const baseRadius = Math.min(w, h) * 0.32;
+      const radiusIncrement = 30; // Increased spacing between rings
+      const cx = w / 2;
+      const cy = h / 2;
+      const nodes = [];
+
+      // Create SVG for connections
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', w);
+      svg.setAttribute('height', h);
+      svg.style.position = 'absolute';
+      svg.style.top = '0';
+      svg.style.left = '0';
+      area.appendChild(svg);
+
+      synonyms.forEach((synonym, i) => {
+        // Perfect circular distribution with alternating rings to prevent overlap
+        const angle = (-Math.PI / 2) + (i * 2 * Math.PI) / synonyms.length;
+        
+        // Create multiple rings based on index to spread nodes better
+        const ringLevel = i % 3; // 3 rings: inner, middle, outer
+        const radius = baseRadius + (ringLevel * radiusIncrement);
+        
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+
+        // Ensure nodes don't go outside boundaries with more generous margins
+        const nodeWidth = 260;
+        const nodeHeight = 120; // Increased for better text display
+        const margin = 20;
+        const finalX = Math.max(nodeWidth/2 + margin, Math.min(w - nodeWidth/2 - margin, x));
+        const finalY = Math.max(nodeHeight/2 + margin, Math.min(h - nodeHeight/2 - margin, y));
+
+        // Create node
+        const node = document.createElement('div');
+        node.className = 'synonym-node';
+        node.style.left = (finalX - nodeWidth/2) + 'px';
+        node.style.top = (finalY - nodeHeight/2) + 'px';
+        node.style.animationDelay = (i * 0.08) + 's'; // Slightly faster animation
+
+        // Create label
+        const label = document.createElement('span');
+        label.className = 'synonym-label';
+        label.style.background = colorPalette[i % colorPalette.length];
+        label.innerText = synonym;
+        node.appendChild(label);
+
+        // Create example with better formatting
+        const example = document.createElement('div');
+        example.className = 'example';
+        example.style.borderLeftColor = borderColors[i % borderColors.length];
+        example.innerHTML = getRealWorldExample(mainWord, synonym);
+        node.appendChild(example);
+
+        area.appendChild(node);
+        nodes.push({ x: finalX, y: finalY, element: node });
+
+        // Create connection line to the actual final position
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', cx);
+        line.setAttribute('y1', cy);
+        line.setAttribute('x2', finalX);
+        line.setAttribute('y2', finalY);
+        line.setAttribute('stroke', borderColors[i % borderColors.length]);
+        line.setAttribute('stroke-width', '2');
+        line.className = 'connection-line';
+        line.style.animationDelay = (i * 0.04) + 's'; // Faster line animation
+        svg.appendChild(line);
+      });
+
+      // Add stats
+      const stats = document.createElement('div');
+      stats.className = 'stats';
+      stats.innerHTML = `Found <strong>${synonyms.length}</strong> synonyms for "<strong>${mainWord}</strong>"`;
+      area.appendChild(stats);
+    }
+
+    // Initialize with a sample word for demonstration
+    window.addEventListener('load', () => {
+      document.getElementById('wordInput').focus();
+      // Auto-generate a sample for demonstration
+      document.getElementById('wordInput').value = 'happy';
+      setTimeout(() => {
+        if (document.getElementById('mindMapArea').innerHTML === '') {
+          generateMindMap();
+        }
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
